@@ -4,6 +4,12 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>信託業業務人員 互動題庫</title>
+<meta name="theme-color" content="#2563eb">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="description" content="免註冊考古刷題；進度存在這台裝置，可選匯出備份或連結帳號同步。">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
 <style>
 :root{--bg:#f4f5f7;--card:#fff;--fg:#1d1d1f;--mut:#6b7280;--pri:#2563eb;--ok:#16a34a;--okbg:#dcfce7;--bad:#dc2626;--badbg:#fee2e2;--sel:#dbeafe;--bd:#d1d5db}
 @media(prefers-color-scheme:dark){:root{--bg:#111827;--card:#1f2937;--fg:#f3f4f6;--mut:#9ca3af;--pri:#3b82f6;--okbg:#14532d;--badbg:#7f1d1d;--sel:#1e3a8a;--bd:#374151}}
@@ -143,12 +149,22 @@ function record(q, n, fromWrong, src) {
 }
 
 /* ---------- 首頁 ---------- */
+function guestCard() {
+  const synced = !!syncCfg().token;
+  return `<div class="card"><b>👋 免註冊・進度在這台裝置</b>
+    <div class="mut">打開就能刷，不必登入。作答、錯題、計畫都存在<strong>這支手機／這台電腦的瀏覽器</strong>裡。
+    ${synced ? '已開啟「連結帳號」，可與其他裝置自動合併。' : '換手機或清資料前，請到「紀錄」<b>匯出備份</b>；若要手機↔電腦自動同步，再到「紀錄」連結帳號。'}
+    iPhone／Android 可用瀏覽器選單「加入主畫面」，比較像 App。</div>
+    <div class="mut" style="margin-top:8px">📌 本站為歷屆考古<strong>練習</strong>，非正式考題庫；考試以當屆簡章與官方公告為準。刷完≠保證及格（真考常有沒看過的新題），請用「仿真模擬考」估實力。</div>
+  </div>`;
+}
 function home() {
   view = 'home'; sess = null; stopTimer();
   const tabs = [['plan', '📅 每日'], ['practice', '練習'], ['mock', '模擬考'], ['wrong', '錯題本'], ['ana', '📊 分析'], ['stats', '紀錄']];
-  let h = `<header><div class="hrow"><h1>${esc(CFG.title)}</h1><span class="links"><a href="note.html?v=1792126214">📖 筆記</a><a href="answers.html?v=1792126214">✅ 解析</a><a href="numbers.html?v=1792126214">🔢 數字</a><a href="predict.html?v=1792126214">🎯 預測</a></span></div><nav>${tabs.map(([k, v]) =>
+  let h = `<header><div class="hrow"><h1>${esc(CFG.title)}</h1><span class="links"><a href="note.html?v=1792126972">📖 筆記</a><a href="answers.html?v=1792126972">✅ 解析</a><a href="numbers.html?v=1792126972">🔢 數字</a><a href="predict.html?v=1792126972">🎯 預測</a></span></div><nav>${tabs.map(([k, v]) =>
     `<button class="tab ${tab === k ? 'on' : ''}" data-act="tab" data-arg="${k}">${v}</button>`).join('')}</nav></header><main>`;
   if (!['plan', 'practice', 'mock', 'wrong', 'ana', 'stats'].includes(tab)) tab = 'plan';
+  if (tab === 'plan' || tab === 'practice') h += guestCard();
   h += (tab !== 'mock' ? sessCard() : '') + {plan: planTab, practice: practiceTab, mock: mockTab, wrong: wrongTab, ana: anaTab, stats: statsTab}[tab]();
   app.innerHTML = h + '</main>';
   const st = app.querySelector('[data-pref=star]'); if (st) st.value = S.prefs.star;
@@ -269,9 +285,9 @@ const dayTime = di => planStartMs() + di * 86400000;
 const dayOpen = di => di <= todayIdx() || !!(S.plan.open || {})[di];
 const dayStart = di => Math.min(dayTime(di), (S.plan.open || {})[di] || Infinity);
 function noteHref(prefix) {
-  if (typeof prefix === 'string' && prefix.endsWith('.html')) return `${prefix}?v=1792126214`;
+  if (typeof prefix === 'string' && prefix.endsWith('.html')) return `${prefix}?v=1792126972`;
   const ids = [].concat(prefix).map(p => Object.keys(NOTE).find(t => t.startsWith(p))).filter(Boolean).map(k => NOTE[k]);
-  return `note.html?v=1792126214${ids.length ? '&only=' + encodeURIComponent(ids.join(',')) : ''}`;
+  return `note.html?v=1792126972${ids.length ? '&only=' + encodeURIComponent(ids.join(',')) : ''}`;
 }
 function todayIdx() { const t = Date.now(); let i = -1; PLAN.forEach((p, k) => { if (t >= dayTime(k)) i = k; }); return i; }
 const taskSet = t => t.k === 'hi' ? hiSet(t.s, chName(t.s, t.c), 1) : t.k === 'one' ? oneSet(t.s, chName(t.s, t.c)) : hiSet(t.s, '', 2);
@@ -479,8 +495,46 @@ function wrongTab() {
   return h;
 }
 
+function backupPayload() {
+  return {
+    v: 1, kind: 'quiz-progress', key: KEY, title: CFG.title,
+    exportedAt: new Date().toISOString(),
+    state: Object.assign(shareState(S), {prefs: S.prefs || {}})
+  };
+}
+function downloadBackup() {
+  const blob = new Blob([JSON.stringify(backupPayload(), null, 0)], {type: 'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `${KEY}-progress-${new Date().toISOString().slice(0, 10)}.json`;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+}
+function importBackupText(raw) {
+  let data;
+  try { data = JSON.parse(raw); } catch (e) { alert('檔案格式不對，請選本站匯出的進度檔'); return; }
+  if (!data || data.kind !== 'quiz-progress' || !data.state) { alert('不是題庫進度檔'); return; }
+  if (data.key && data.key !== KEY) {
+    if (!confirm(`這個檔是「${data.title || data.key}」的進度，和目前網站（${CFG.title}）不同。仍要匯入嗎？（通常不該混科）`)) return;
+  }
+  if (!confirm('匯入後會與這台現有進度合併（較新的紀錄優先）。確定？')) return;
+  mergeState(S, data.state);
+  if (data.state.prefs) S.prefs = Object.assign(S.prefs || {}, data.state.prefs);
+  save();
+  alert('已匯入並合併進度');
+  home();
+}
+function backupCard() {
+  return `<div class="card"><b>💾 進度備份（訪客推薦）</b>
+    <div class="mut">不用帳號也能換機：匯出檔案或複製文字，到另一台同一題庫網站匯入。清瀏覽器資料前請先備份。</div>
+    <button class="primary" data-act="export">匯出進度檔</button>
+    <button data-act="exportcopy">複製進度文字</button>
+    <label style="display:inline-block;margin:4px 6px 4px 0;padding:10px 12px;border:1px solid var(--bd);border-radius:10px;cursor:pointer;background:var(--card)">匯入進度檔
+      <input type="file" accept="application/json,.json,.txt,text/plain" data-import="1" style="display:none">
+    </label></div>`;
+}
 function statsTab() {
-  let h = syncCard();
+  let h = guestCard() + backupCard() + syncCard();
   SUBS.forEach(s => {
     const chs = [...new Set(DATA.hot.filter(q => q.s === s).map(q => q.ch))];
     const all = DATA.hot.concat(DATA.old).filter(q => q.s === s && q.star >= 1 && q.ans != null)
@@ -500,7 +554,7 @@ function statsTab() {
   h += S.hist.length ? '<table><tr><th>時間</th><th>考卷</th><th>分數</th><th>用時</th></tr>' + S.hist.slice(0, 20).map(x =>
     `<tr><td>${esc(x.date)}</td><td>${esc(x.name)}</td><td class="${x.score >= 70 ? 'pass' : 'fail'}">${x.score}</td><td>${x.used} 分</td></tr>`).join('') + '</table>'
     : '<div class="mut">還沒考過</div>';
-  h += '</div><div class="card mut">紀錄存在這台裝置的瀏覽器裡；開啟上面的「同步」後，手機和電腦的紀錄會自動合併。<br><button data-act="reset">清除所有紀錄</button></div>';
+  h += '</div><div class="card mut">進度預設只存在這台裝置。換機請先「匯出備份」；進階才用「連結帳號」雲端同步。<br><button data-act="reset">清除所有紀錄</button></div>';
   return h;
 }
 
@@ -909,6 +963,12 @@ function act(a, arg) {
       result.i = 0; showReview(); break; }
     case 'reset': if (confirm('確定清除所有作答紀錄、錯題本、收藏與模擬考成績？')) {
       S = {rec: {}, wrong: {}, fav: {}, mock: {}, hist: [], cur: null, prefs: S.prefs, plan: {chk: {}, snap: {}}, resetAt: Date.now()}; save(); home(); } break;
+    case 'export': downloadBackup(); break;
+    case 'exportcopy': {
+      const t = JSON.stringify(backupPayload());
+      (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(
+        () => alert('已複製進度文字，到另一台按「匯入」或貼進文字檔再匯入'),
+        () => prompt('複製這整段文字，到另一台匯入', t)); break; }
     case 'syncset': { const t = (document.getElementById('synctoken') || {}).value; if (!t || !t.trim()) return;
       setSyncCfg({token: t.trim()}); syncErr = ''; try { localStorage.setItem(DIRTY_KEY, '1'); } catch (e) {}
       home(); syncNow(true, 0).then(() => { if (syncErrKind === 'auth') { setSyncCfg({}); home(); } }); break; }
@@ -933,6 +993,15 @@ app.addEventListener('click', e => {
   if (b && !b.disabled) act(b.dataset.act, b.dataset.arg);
 });
 app.addEventListener('change', e => {
+  if (e.target.dataset.import) {
+    const f = e.target.files && e.target.files[0];
+    if (!f) return;
+    const reader = new FileReader();
+    reader.onload = () => importBackupText(String(reader.result || ''));
+    reader.readAsText(f);
+    e.target.value = '';
+    return;
+  }
   if (e.target.dataset.plan) { setPlanDay(+e.target.value); home(); return; }
   if (e.target.dataset.planDays != null) { applyPlanDays(e.target.value); return; }
   const k = e.target.dataset.pref;
@@ -1095,29 +1164,33 @@ async function syncNow(rerender, gap = PUT_GAP) {
 const hhmm = t => new Date(t).toLocaleTimeString('zh-TW', {hour12: false, hour: '2-digit', minute: '2-digit'});
 const syncTime = () => hhmm(syncLast);
 function syncBadge() {
-  if (!syncCfg().token) return '<div class="mut syncbadge">☁️ 手機、電腦進度同步：到「紀錄」分頁設定一次即可</div>';
+  if (!syncCfg().token) return '<div class="mut syncbadge">💾 進度在這台裝置・要換機請到「紀錄」匯出備份；進階可連結帳號雲端同步</div>';
   const pend = localStorage.getItem(DIRTY_KEY), hold = holdLeft();
   const s = syncBusy ? '同步中…' : syncErr ? `<span class="fail">同步失敗：${esc(syncErr)}</span>`
-    : hold ? `⏳ GitHub 每小時寫入次數已滿，${hhmm(Date.now() + hold)} 後自動上傳（進度已存在這台，不會消失）`
-    : !syncLast ? '等待同步' : pend ? `已同步（${syncTime()}），這台的新作答 2 分鐘內自動上傳；要換裝置請先按「立即同步」` : `已同步（${syncTime()}）`;
+    : hold ? `⏳ 雲端暫時額滿，${hhmm(Date.now() + hold)} 後自動上傳（進度已存在這台）`
+    : !syncLast ? '等待同步' : pend ? `已連結（${syncTime()}），新作答約 2 分鐘內上傳；換機前按「立即同步」` : `已連結（${syncTime()}）`;
   return `<div class="mut syncbadge">☁️ ${s}</div>`;
 }
 function syncCard() {
-  if (!syncCfg().token) return `<div class="card"><b>☁️ 手機、電腦進度同步</b>
-    <div class="mut">設定一次後，網頁開著時每分鐘下載另一台的進度、做題時約每 1.5 分鐘自動上傳。理財規劃和內控兩個網站共用同一組金鑰，進度分開存。<br>
-    ① 電腦登入 GitHub 後打開 <a href="https://github.com/settings/tokens/new?scopes=gist&description=quiz-sync" target="_blank" rel="noopener">這個連結</a>（已自動勾好 gist），「Expiration」選 90 days，拉到最下面按「Generate token」。<br>
-    ② 複製 ghp_ 開頭的金鑰，貼到下面，按「開始同步」。<br>
-    ③ 手機打開這一頁，貼上同一組金鑰（可以用 LINE 傳給自己）。</div>
+  if (!syncCfg().token) return `<div class="card"><b>☁️ 連結帳號（進階・可選）</b>
+    <div class="mut">大多數人<strong>不必開這個</strong>：訪客＋上面的「匯出備份」就夠。若你常換手機／電腦、想自動合併進度，再用 GitHub 免費空間當私人同步盤（金鑰只存在你的瀏覽器，本站伺服器看不到）。</div>
+    <details style="margin-top:8px"><summary style="cursor:pointer;color:var(--pri)">設定步驟（約 3 分鐘）</summary>
+    <div class="mut" style="margin-top:8px">
+    ① 用電腦登入 GitHub → 打開 <a href="https://github.com/settings/tokens/new?scopes=gist&description=quiz-sync" target="_blank" rel="noopener">產生金鑰</a>（已勾 gist）→ Expiration 選 90 days → Generate token。<br>
+    ② 複製 <code>ghp_</code> 開頭字串，貼下面按「連結帳號」。<br>
+    ③ 手機打開同一題庫，貼同一組金鑰。各證照進度分開存；同一把金鑰可給多個題庫網站用。
+    </div>
     <input id="synctoken" type="password" autocomplete="off" placeholder="貼上 ghp_ 開頭的金鑰" style="width:100%;font:inherit;padding:8px;margin:8px 0;border-radius:8px;border:1px solid var(--bd);background:var(--card);color:var(--fg)">
-    <button class="primary" data-act="syncset">開始同步</button>${syncErr ? `<div class="fail">${esc(syncErr)}</div>` : ''}</div>`;
-  const who = gistOwner ? `<div class="mut">🔑 雲端帳號 <b>${esc(gistOwner)}</b>・同步檔 <b>${esc((syncCfg().gist || '').slice(0, 6))}</b>（手機和電腦這行要一模一樣，進度才會互通）</div>` : '';
-  return `<div class="card"><b>☁️ 手機、電腦進度同步：已開啟</b>${syncBadge()}${who}
-    <div class="mut">網頁開著時每分鐘下載另一台的進度；做題時約每 1.5 分鐘自動上傳，切到別的 App／分頁時也會上傳。<b>手機鎖螢幕後網頁會被暫停，換裝置前按「立即同步」最保險。</b></div>
-    <button data-act="syncnow">立即同步</button><button data-act="synccopy">📋 複製金鑰（貼到另一台）</button><button data-act="syncoff">這台停止同步</button></div>`;
+    <button class="primary" data-act="syncset">連結帳號</button>${syncErr ? `<div class="fail">${esc(syncErr)}</div>` : ''}
+    </details></div>`;
+  const who = gistOwner ? `<div class="mut">🔑 雲端帳號 <b>${esc(gistOwner)}</b>・同步檔 <b>${esc((syncCfg().gist || '').slice(0, 6))}</b>（手機和電腦這行要一樣）</div>` : '';
+  return `<div class="card"><b>☁️ 連結帳號：已開啟</b>${syncBadge()}${who}
+    <div class="mut">開著網頁時會自動對進度；鎖螢幕後可能暫停，<b>換裝置前按「立即同步」</b>最穩。訪客備份（匯出檔）仍可併用。</div>
+    <button data-act="syncnow">立即同步</button><button data-act="synccopy">📋 複製金鑰</button><button data-act="syncoff">這台取消連結</button></div>`;
 }
 setInterval(() => { if (document.visibilityState === 'visible') syncNow(true); }, PULL_GAP);
 
-const PAGE_VER = '1792126214';
+const PAGE_VER = '1792126972';
 function checkUpdate() {
   if (document.getElementById('newver')) return;
   fetch('index.html?x=' + Date.now(), {cache: 'no-store'}).then(r => r.text()).then(t => {
@@ -1135,6 +1208,9 @@ function checkUpdate() {
 fixMoved();
 home();
 if (syncCfg().token) syncNow(true);
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js').catch(() => {});
+}
 document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'visible') { syncNow(true); checkUpdate(); }
   else if (localStorage.getItem(DIRTY_KEY)) syncNow(false, FLUSH_GAP);
