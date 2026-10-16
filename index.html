@@ -146,7 +146,7 @@ function record(q, n, fromWrong, src) {
 function home() {
   view = 'home'; sess = null; stopTimer();
   const tabs = [['practice', '練習'], ['mock', '模擬考'], ['wrong', '錯題本'], ['ana', '📊 分析'], ['stats', '紀錄']];
-  let h = `<header><div class="hrow"><h1>${esc(CFG.title)}</h1></div><nav>${tabs.map(([k, v]) =>
+  let h = `<header><div class="hrow"><h1>${esc(CFG.title)}</h1><span class="links"><a href="note.html?v=1792123484">📖 筆記</a><a href="answers.html?v=1792123484">✅ 解析</a><a href="numbers.html?v=1792123484">🔢 數字</a><a href="predict.html?v=1792123484">🎯 預測</a></span></div><nav>${tabs.map(([k, v]) =>
     `<button class="tab ${tab === k ? 'on' : ''}" data-act="tab" data-arg="${k}">${v}</button>`).join('')}</nav></header><main>`;
   if (!['plan', 'practice', 'mock', 'wrong', 'ana', 'stats'].includes(tab)) tab = 'practice';
   h += (tab !== 'mock' ? sessCard() : '') + {plan: planTab, practice: practiceTab, mock: mockTab, wrong: wrongTab, ana: anaTab, stats: statsTab}[tab]();
@@ -192,9 +192,9 @@ const dayTime = di => { const [m, d] = PLAN[di][0].split('/'); return new Date(Y
 const dayOpen = di => di <= todayIdx() || !!(S.plan.open || {})[di];
 const dayStart = di => Math.min(dayTime(di), (S.plan.open || {})[di] || Infinity);
 function noteHref(prefix) {
-  if (typeof prefix === 'string' && prefix.endsWith('.html')) return `${prefix}?v=1792123111`;
+  if (typeof prefix === 'string' && prefix.endsWith('.html')) return `${prefix}?v=1792123484`;
   const ids = [].concat(prefix).map(p => Object.keys(NOTE).find(t => t.startsWith(p))).filter(Boolean).map(k => NOTE[k]);
-  return `note.html?v=1792123111${ids.length ? '&only=' + encodeURIComponent(ids.join(',')) : ''}`;
+  return `note.html?v=1792123484${ids.length ? '&only=' + encodeURIComponent(ids.join(',')) : ''}`;
 }
 function todayIdx() { const t = Date.now(); let i = -1; PLAN.forEach((p, k) => { if (t >= dayTime(k)) i = k; }); return i; }
 const taskSet = t => t.k === 'hi' ? hiSet(t.s, chName(t.s, t.c), 1) : t.k === 'one' ? oneSet(t.s, chName(t.s, t.c)) : hiSet(t.s, '', 2);
@@ -1032,7 +1032,7 @@ function syncCard() {
 }
 setInterval(() => { if (document.visibilityState === 'visible') syncNow(true); }, PULL_GAP);
 
-const PAGE_VER = '1792123111';
+const PAGE_VER = '1792123484';
 function checkUpdate() {
   if (document.getElementById('newver')) return;
   fetch('index.html?x=' + Date.now(), {cache: 'no-store'}).then(r => r.text()).then(t => {
