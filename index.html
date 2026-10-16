@@ -127,7 +127,7 @@ const isOk = (q, a) => q.ans == null || a === q.ans || (Array.isArray(q.ans) && 
 const shuffle = a => { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
 const fmt = ms => { const t = Math.max(0, Math.ceil(ms / 1000)); return `${Math.floor(t / 60)}:${String(t % 60).padStart(2, '0')}`; };
 
-let view = 'home', tab = 'practice', sess = null, result = null, timerId = null;
+let view = 'home', tab = 'plan', sess = null, result = null, timerId = null;
 
 function stopTimer() { if (timerId) { clearInterval(timerId); timerId = null; } }
 
@@ -145,10 +145,10 @@ function record(q, n, fromWrong, src) {
 /* ---------- 首頁 ---------- */
 function home() {
   view = 'home'; sess = null; stopTimer();
-  const tabs = [['practice', '練習'], ['mock', '模擬考'], ['wrong', '錯題本'], ['ana', '📊 分析'], ['stats', '紀錄']];
-  let h = `<header><div class="hrow"><h1>${esc(CFG.title)}</h1><span class="links"><a href="note.html?v=1792123484">📖 筆記</a><a href="answers.html?v=1792123484">✅ 解析</a><a href="numbers.html?v=1792123484">🔢 數字</a><a href="predict.html?v=1792123484">🎯 預測</a></span></div><nav>${tabs.map(([k, v]) =>
+  const tabs = [['plan', '📅 每日'], ['practice', '練習'], ['mock', '模擬考'], ['wrong', '錯題本'], ['ana', '📊 分析'], ['stats', '紀錄']];
+  let h = `<header><div class="hrow"><h1>${esc(CFG.title)}</h1><span class="links"><a href="note.html?v=1792124778">📖 筆記</a><a href="answers.html?v=1792124778">✅ 解析</a><a href="numbers.html?v=1792124778">🔢 數字</a><a href="predict.html?v=1792124778">🎯 預測</a></span></div><nav>${tabs.map(([k, v]) =>
     `<button class="tab ${tab === k ? 'on' : ''}" data-act="tab" data-arg="${k}">${v}</button>`).join('')}</nav></header><main>`;
-  if (!['plan', 'practice', 'mock', 'wrong', 'ana', 'stats'].includes(tab)) tab = 'practice';
+  if (!['plan', 'practice', 'mock', 'wrong', 'ana', 'stats'].includes(tab)) tab = 'plan';
   h += (tab !== 'mock' ? sessCard() : '') + {plan: planTab, practice: practiceTab, mock: mockTab, wrong: wrongTab, ana: anaTab, stats: statsTab}[tab]();
   app.innerHTML = h + '</main>';
   const st = app.querySelector('[data-pref=star]'); if (st) st.value = S.prefs.star;
@@ -167,34 +167,111 @@ const NOTE = {};
 const YEAR = 2026, RATE = 45;
 const R = (s, c, min) => ({k: 'read', s, c, min}), H = (s, c) => ({k: 'hi', s, c}), O = (s, c) => ({k: 'one', s, c}), V = s => ({k: 'rev', s});
 const M = (id, min, opt) => ({k: 'mock', id, min, opt}), Sm = (s, min, opt) => ({k: 'sim', s, min, opt}), W = (s, min) => ({k: 'wrong', s, min}), C = (text, min, note) => ({k: 'chk', text, min, note});
-const PLAN = [
-  ['10/1', '四', [C('看筆記「第 1 部分」考試資訊與準備策略', 15, '第 1 部分'), R('prac', 0, 15), H('prac', 0), R('prac', 1, 15), H('prac', 1)]],
-  ['10/2', '五', [R('prac', 2, 15), H('prac', 2), R('prac', 3, 15), H('prac', 3)]],
-  ['10/3', '六', [R('prac', 4, 15), H('prac', 4), R('prac', 5, 15), H('prac', 5), R('prac', 6, 20), H('prac', 6)]],
-  ['10/4', '日', [R('prac', 7, 10), H('prac', 7), R('prac', 8, 10), H('prac', 8), R('prac', 10, 15), H('prac', 10), R('prac', 11, 10), H('prac', 11), W('prac', 30)]],
-  ['10/5', '一', [R('prac', 9, 15), H('prac', 9), M('49實務', 120)]],
-  ['10/6', '二', [R('law', 7, 20), H('law', 7), W('prac', 30)]],
-  ['10/7', '三', [R('law', 5, 10), H('law', 5), R('law', 6, 10), H('law', 6), R('law', 4, 10), H('law', 4)]],
-  ['10/8', '四', [R('law', 0, 10), H('law', 0), R('law', 1, 10), H('law', 1), R('law', 2, 10), H('law', 2), W('law', 30)]],
-  ['10/9', '五', [R('law', 3, 15), H('law', 3), M('49法規', 80), W('all', 30)]],
-  ['10/10', '六・國慶', [O('law', 7), O('law', 3)]],
-  ['10/11', '日', [M('predAprac', 120), M('predAlaw', 80), W('all', 40)]],
-  ['10/12', '一', [M('predBlaw', 80), Sm('law', 80), V('prac')]],
-  ['10/13', '二', [Sm('prac', 120), C('看完 🔢 數字速記（法規、實務都要）', 45, 'numbers.html'), W('all', 30), M('predBprac', 120, 1), M('predClaw', 80, 1), M('predCprac', 120, 1)]],
-  ['10/14', '三・考試', [C('出門前看 🔢 數字速記的法規部分', 15, 'numbers.html'), C('准考證、身分證、文具帶齊', 5), C('兩節中間休息時看 🔢 數字速記的實務部分', 15, 'numbers.html')]]
-];
+/* 可選／輸入天數的每日計畫（由 build_cert 注入，取代模板內寫死的 PLAN） */
+let PLAN = [];
+const WD = ["日", "一", "二", "三", "四", "五", "六"];
+function planStartMs() {
+  if (!S.plan.start) {
+    const d = new Date(); d.setHours(0, 0, 0, 0);
+    S.plan.start = d.getTime();
+  }
+  return S.plan.start;
+}
+function fmtPlanDay(i) {
+  const d = new Date(planStartMs() + i * 86400000);
+  return [`${d.getMonth() + 1}/${d.getDate()}`, WD[d.getDay()]];
+}
+function buildPlan(n) {
+  n = Math.max(3, Math.min(60, parseInt(n, 10) || 14));
+  const order = CFG.order.slice();
+  const chapters = [];
+  order.forEach(s => {
+    (DATA.blocks[s] || []).forEach((b, c) => { chapters.push({ s, c }); });
+  });
+  const studyN = Math.max(1, Math.round(n * 0.55));
+  const mockN = Math.max(1, Math.round(n * 0.25));
+  const finalN = Math.max(1, n - studyN - mockN);
+  const plan = [];
+  let ci = 0;
+  const per = Math.max(1, Math.ceil(chapters.length / studyN));
+  for (let i = 0; i < studyN; i++) {
+    const tasks = [];
+    for (let k = 0; k < per && ci < chapters.length; k++, ci++) {
+      const { s, c } = chapters[ci];
+      tasks.push(R(s, c, 12), H(s, c));
+    }
+    if (!tasks.length && chapters.length) {
+      const { s, c } = chapters[i % chapters.length];
+      tasks.push(R(s, c, 12), H(s, c));
+    }
+    if (i > 0 && i % 3 === 2) tasks.push(W(order[i % order.length], 25));
+    const [date, wd] = fmtPlanDay(i);
+    plan.push([date, wd, tasks]);
+  }
+  const papers = DATA.mock.filter(p => !p.pred);
+  for (let i = 0; i < mockN; i++) {
+    const s = order[i % order.length];
+    const tasks = [Sm(s, (CFG.subj[s].min || 60) + 20)];
+    const ps = papers.filter(p => p.s === s);
+    if (ps.length) tasks.push(M(ps[Math.min(i, ps.length - 1)].id, (CFG.subj[s].min || 60) + 20));
+    tasks.push(W(s, 30));
+    const [date, wd] = fmtPlanDay(studyN + i);
+    plan.push([date, wd, tasks]);
+  }
+  const preds = DATA.mock.filter(p => p.pred);
+  for (let i = 0; i < finalN; i++) {
+    const tasks = [];
+    if (i === 0) tasks.push(C("看完 🔢 數字速記", 30, "numbers.html"));
+    const a = Math.floor(i * preds.length / finalN);
+    const b = Math.floor((i + 1) * preds.length / finalN);
+    preds.slice(a, b).forEach(p => tasks.push(M(p.id, (p.min || 60) + 20)));
+    tasks.push(W("all", 35));
+    if (i === finalN - 1) {
+      tasks.push(C("准考證、身分證、文具帶齊", 5));
+      tasks.push(C("考前再看一次數字速記", 15, "numbers.html"));
+    }
+    if (!tasks.length) tasks.push(W("all", 40));
+    const [date, wd] = fmtPlanDay(studyN + mockN + i);
+    plan.push([date, wd, tasks]);
+  }
+  return plan;
+}
+function ensurePlan() {
+  const n = S.plan.nDays || 14;
+  if (!PLAN.length || S.plan._built !== n || !S.plan.start) {
+    if (S.plan._built !== n) {
+      const d = new Date(); d.setHours(0, 0, 0, 0);
+      S.plan.start = d.getTime();
+      S.plan.open = {};
+      S.plan.day = { d: 0, t: Date.now() };
+    }
+    PLAN = buildPlan(n);
+    S.plan.nDays = n;
+    S.plan._built = n;
+    save();
+  }
+}
+function applyPlanDays(n) {
+  n = Math.max(3, Math.min(60, parseInt(n, 10) || 14));
+  S.plan.nDays = n;
+  S.plan._built = null;
+  ensurePlan();
+  home();
+  window.scrollTo(0, 0);
+}
+
 function setPlanDay(k) { S.plan.day = {d: k, t: Date.now()}; save(); }
 const chName = (s, c) => DATA.blocks[s][c][0];
 const hiSet = (s, ch, star) => DATA.hot.concat(DATA.old).filter(q => q.s === s && (!ch || q.ch === ch) && q.star >= star && q.ans != null);
 const oneSet = (s, ch) => DATA.hot.concat(DATA.single, DATA.old).filter(q => q.s === s && q.ch === ch && !q.star && q.ans != null);
 const qMin = n => Math.max(5, Math.round(n * 60 / RATE));
-const dayTime = di => { const [m, d] = PLAN[di][0].split('/'); return new Date(YEAR, m - 1, d).getTime(); };
+const dayTime = di => planStartMs() + di * 86400000;
 const dayOpen = di => di <= todayIdx() || !!(S.plan.open || {})[di];
 const dayStart = di => Math.min(dayTime(di), (S.plan.open || {})[di] || Infinity);
 function noteHref(prefix) {
-  if (typeof prefix === 'string' && prefix.endsWith('.html')) return `${prefix}?v=1792123484`;
+  if (typeof prefix === 'string' && prefix.endsWith('.html')) return `${prefix}?v=1792124778`;
   const ids = [].concat(prefix).map(p => Object.keys(NOTE).find(t => t.startsWith(p))).filter(Boolean).map(k => NOTE[k]);
-  return `note.html?v=1792123484${ids.length ? '&only=' + encodeURIComponent(ids.join(',')) : ''}`;
+  return `note.html?v=1792124778${ids.length ? '&only=' + encodeURIComponent(ids.join(',')) : ''}`;
 }
 function todayIdx() { const t = Date.now(); let i = -1; PLAN.forEach((p, k) => { if (t >= dayTime(k)) i = k; }); return i; }
 const taskSet = t => t.k === 'hi' ? hiSet(t.s, chName(t.s, t.c), 1) : t.k === 'one' ? oneSet(t.s, chName(t.s, t.c)) : hiSet(t.s, '', 2);
@@ -301,6 +378,7 @@ function composite(ti) {
 }
 
 function planTab() {
+  ensurePlan();
   const ti = todayIdx();
   if (!S.plan.day || !PLAN[S.plan.day.d]) {
     const k = PLAN.findIndex((p, k) => Math.round(dayInfo(k).pct * 100) < 100);
@@ -310,9 +388,11 @@ function planTab() {
   // 前面的日子都 100% 了：這天的錯題本、⭐⭐ 重做提前開放
   if (!dayOpen(di) && PLAN.slice(0, di).every((p, k) => Math.round(dayInfo(k).pct * 100) >= 100)) { (S.plan.open = S.plan.open || {})[di] = Date.now(); save(); }
   const D = dayInfo(di), [date, wd] = PLAN[di];
-  let h = `<div class="card"><label>日期 <select data-plan="day">${PLAN.map((p, k) =>
-    `<option value="${k}" ${k === di ? 'selected' : ''}>${p[0]}（${p[1]}）${k === ti ? '・今天' : ''}</option>`).join('')}</select></label>
-    <div class="mut">從 10/1 開始排：前 5 天實務（第二節，80 題、章節多），接著 5 天法規（10/10 補只考過 1 屆的題目），最後 4 天模擬考＋清錯題。題目類作業會自動算進度（在這裡按「開始」，或在練習、模擬考分頁做的都算）；讀筆記類讀完自己打勾。會停在你上次選的日子，下次打開還是那天（手機、電腦同步後以最後一次選的為準；只有第一次打開時自動跳到最前面一天還沒 100% 的日子）；前面的日子都 100% 後，下一天的錯題本、⭐⭐ 重做會提前開放，可以一天一天往下做。</div>${syncBadge()}</div>`;
+  const nd = S.plan.nDays || 14;
+  const dayOpts = [7, 14, 21, 30].map(n => `<option value="${n}" ${n === nd ? 'selected' : ''}>${n} 天</option>`).join('');
+  let h = `<div class="card"><div class="rt" style="gap:8px;flex-wrap:wrap;align-items:center"><label>計畫天數 <select data-plan-days>${dayOpts}</select></label><label>或自訂 <input type="number" min="3" max="60" data-plan-days-in value="${nd}" style="width:4em"></label><button type="button" data-act="plandays">套用天數</button></div><label>日期 <select data-plan="day">${PLAN.map((p, k) =>
+    `<option value="${k}" ${k === di ? 'selected' : ''}>第 ${k + 1} 天・${p[0]}（${p[1]}）${k === ti ? '・今天' : ''}</option>`).join('')}</select></label>
+    <div class="mut">選 7／14／21／30 天，或輸入 3～60 後按「套用天數」：前半刷各章高頻題＋筆記，中段仿真／歷屆模擬考，最後預測卷 A／B／C＋清錯題＋數字速記。題目類自動算進度；讀筆記／打勾項自己勾。換天數會從今天重排（作答紀錄保留）。</div>${syncBadge()}</div>`;
   h += `<div class="card"><div class="rt"><b>${date}（${wd}）的作業</b><span>預計 ${(D.tot / 60).toFixed(1)} 小時</span></div>
     <div class="big">${Math.round(D.pct * 100)}%</div><div class="pbar"><i style="width:${D.pct * 100}%"></i></div>
     <div class="mut">完成度（依每項預計時間加權）${D.n ? ` · 這天的題目上次答對率 ${Math.round(D.right / D.n * 100)}%（${D.right}/${D.n}）` : ''}</div></div>`;
@@ -332,7 +412,7 @@ function planTab() {
     <table><tr><th>項目</th><th>分數</th><th>權重</th><th>說明</th></tr>${cs.parts.map(([n, v, w, d]) =>
       `<tr><td>${n}</td><td>${v == null ? '—' : Math.round(v * 100)}</td><td>${Math.round(w * 100)}%</td><td>${esc(d)}</td></tr>`).join('')}</table>
     <div class="mut">還沒有分數的項目不算，權重按比例分給其他項。兩科都要 70 分才過，所以模擬考取較低的一科。</div></div>`;
-  h += '<div class="card"><b>14 天總覽</b><div class="mut">點日期直接切換</div>';
+  h += `<div class="card"><b>${PLAN.length} 天總覽</b><div class="mut">點日期直接切換</div>`;
   PLAN.forEach((p, k) => {
     const d = k === di ? D : dayInfo(k);
     h += `<button class="row" data-act="pday" data-arg="${k}"><div class="rt"><b>${k === di ? '▶ ' : ''}${p[0]}（${p[1]}）${k === ti ? '・今天' : ''}</b>
@@ -768,6 +848,10 @@ function act(a, arg) {
     case 'home': if (view === 'mock') { mockClock(null); save(); } home(); break;
     case 'subj': S.prefs.s = arg; save(); home(); break;
     case 'pday': setPlanDay(+arg); home(); window.scrollTo(0, 0); break;
+    case 'plandays': {
+      const inp = document.querySelector('[data-plan-days-in]');
+      const sel = document.querySelector('[data-plan-days]');
+      applyPlanDays((inp && inp.value) || (sel && sel.value) || 14); break; }
     case 'pchk': S.plan.chk[arg] = S.plan.chk[arg] > 0 ? -Date.now() : Date.now(); save(); home(); break;
     case 'pstart': {
       const [di, ti] = arg.split('-').map(Number), t = PLAN[di][2][ti];
@@ -850,6 +934,7 @@ app.addEventListener('click', e => {
 });
 app.addEventListener('change', e => {
   if (e.target.dataset.plan) { setPlanDay(+e.target.value); home(); return; }
+  if (e.target.dataset.planDays != null) { applyPlanDays(e.target.value); return; }
   const k = e.target.dataset.pref;
   if (!k) return;
   S.prefs[k] = k === 'shuf' ? e.target.checked : k === 'star' ? +e.target.value : e.target.value;
@@ -1032,7 +1117,7 @@ function syncCard() {
 }
 setInterval(() => { if (document.visibilityState === 'visible') syncNow(true); }, PULL_GAP);
 
-const PAGE_VER = '1792123484';
+const PAGE_VER = '1792124778';
 function checkUpdate() {
   if (document.getElementById('newver')) return;
   fetch('index.html?x=' + Date.now(), {cache: 'no-store'}).then(r => r.text()).then(t => {
